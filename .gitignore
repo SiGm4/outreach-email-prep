@@ -1,0 +1,9 @@
+# Ignore all credential files
+credentials.json
+token.json
+
+# Ignore __pycache__
+__pycache__/
+
+#Ignore input CSVs - export new ones
+input/
