@@ -37,7 +37,7 @@ def authorize():
 
 def update_values(spreadsheet_id, range_name, value_input_option, values, service):
     body = {
-        'values': values
+        'values': values,
     }
     try:
         result = service.spreadsheets().values().update(spreadsheetId=spreadsheet_id, range=range_name, valueInputOption=value_input_option, body=body).execute()

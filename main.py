@@ -1,57 +1,40 @@
 import pandas as pd
 
 import sheetslib as sl
-import sheetsformatlib as sfl
 
-from csvhandler import get_csvs_from_input_folder
+from email_builder import molly_email
 
-from googleapiclient.errors import HttpError
+# import sheetsformatlib as sfl
+
+# from csvhandler import get_csvs_from_input_folder
+
+# from googleapiclient.errors import HttpError
 
 # The ID of the main spreadsheet
-spreadsheet_id = '1vwazr-XfwBhWsA7ArqoQNpOP-hg0BGUluYlMGwFvEwc'
+spreadsheet_id = '1_TFwhDWEbNOHqyUy_6GDtEEjdTTpbsCrc9QI67nP3Zo'
+
+our_link = "https://www.memberstack.com/blog/cloneable-webflow-parallax-animation-templates"
 
 if __name__ == '__main__':
     creds, service = sl.authorize()
 
 print(creds, service)
 
+response = sl.read_values(spreadsheet_id, "Link Building Prospects", service)
 
+# print(response)
 
+df = pd.DataFrame(response[1:], columns=response[0])
 
-# Read CSV files in the "input/" directory
-csv_files = get_csvs_from_input_folder()
-print(csv_files)
+print(df.info())
 
-dropped_columns = ["#","Country","CPC","CPS","Parent Keyword","Last Update","SERP Features", "Traffic potential"]
-relative_difficulty_formula = '=IF(AND(INDIRECT("RC[-3]", FALSE)>=0,INDIRECT("RC[-3]", FALSE)<34),"Low",IF(AND(INDIRECT("RC[-3]", FALSE)>=34,INDIRECT("RC[-3]", FALSE)<67),"Medium",IF(AND(INDIRECT("RC[-3]", FALSE)>=67,INDIRECT("RC[-3]", FALSE)<=100),"High","")))'
+df["Email"] = df.apply(lambda row: molly_email(row["Recipient"], row["Content URL"], row["Topic"], our_link, row["Anchor Text"]), axis="columns")
 
-for file in csv_files:
-    df = pd.read_csv(file)
-    df.drop(dropped_columns, axis="columns", inplace=True)
-    print(df.info())
+print(df.tail())
 
-    # Clean up "NaN"
-    df.fillna('', inplace=True)
+print(df["Recipient"].values.tolist())
 
-    # Add Relative Difficulty column
-    df["Relative Difficulty"] = relative_difficulty_formula
+body = df["Email"].values.tolist()
+body = [[item] for item in body]
 
-    # Take top keyword and use it as the sheet title
-    #print(df["Keyword"][0].title())
-    title = df["Keyword"][0].title()
-    sheet_id = sl.create_sheet_or_get_sheet_id(spreadsheet_id, title, service)
-
-    body = [df.columns.values.tolist()] + df.values.tolist()
-
-    range = title + "!A1:E" + str(len(df)+1)
-
-    sl.update_values(spreadsheet_id, range, "USER_ENTERED", body, service)
-
-    sfl.align_vertical_middle_all(spreadsheet_id, sheet_id, service)
-    sfl.bold_center_header_row(spreadsheet_id, sheet_id, service)
-    sfl.color_header_row(spreadsheet_id, sheet_id, service, 5)
-    sfl.center_columns(spreadsheet_id, sheet_id, service, 1, 5)
-    sfl.auto_resize_column(spreadsheet_id, sheet_id, service, 1)
-    sfl.auto_resize_column(spreadsheet_id, sheet_id, service, 5)
-    sfl.relative_difficulty_conditional_formatting(spreadsheet_id, sheet_id, service, len(df))
-
+sl.update_values(spreadsheet_id, "Link Building Prospects!P2:P26", "USER_ENTERED", body, service)
